@@ -4,9 +4,13 @@ import { localStorage as localDriver } from "@/lib/storage/local";
 
 export type StorageMode = "blob" | "local" | "unconfigured";
 
+function onVercel(): boolean {
+  return Boolean(process.env.VERCEL || process.env.VERCEL_ENV || process.env.VERCEL_URL);
+}
+
 export function storageMode(): StorageMode {
-  if (process.env.BLOB_READ_WRITE_TOKEN) return "blob";
-  if (process.env.VERCEL) return "unconfigured";
+  if (process.env.BLOB_READ_WRITE_TOKEN?.trim()) return "blob";
+  if (onVercel()) return "unconfigured";
   return "local";
 }
 

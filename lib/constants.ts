@@ -1,4 +1,22 @@
-export const DEFAULT_FOLDERS = ["商品DM", "教育訓練", "表單文件", "行銷素材"] as const;
+export const DEFAULT_FOLDERS = ["客戶檔案", "講師分類", "月會檔案"] as const;
+
+/** Blob path prefix so this library never shares objects with another site in the same store. */
+export const BLOB_NAMESPACE = "shihan";
+
+/**
+ * Vercel Blob Hobby includes 1 GB/month of storage.
+ * @see https://vercel.com/docs/vercel-blob/usage-and-pricing
+ * 1024³ bytes so the on-screen total reads「1 GB」, in the same units as file sizes.
+ */
+export const DEFAULT_BLOB_QUOTA_BYTES = 1024 * 1024 * 1024;
+
+export function blobCatalogPath(): string {
+  return `${BLOB_NAMESPACE}/catalog/index.json`;
+}
+
+export function blobObjectPath(id: string): string {
+  return `${BLOB_NAMESPACE}/files/${id}`;
+}
 
 export const DOCUMENT_MAX_BYTES = 40 * 1024 * 1024;
 export const VIDEO_MAX_BYTES = 100 * 1024 * 1024;
@@ -41,7 +59,8 @@ export const ALLOWED_CONTENT_TYPES = [
   ...new Set([...Object.values(EXT_TO_MIME), "application/octet-stream"]),
 ];
 
-export const NAME_STORAGE_KEY = "liang-team-uploader-name";
+export const NAME_STORAGE_KEY = "shihan-uploader-name";
+export const DEFAULT_UPLOADER_NAME = "仕翰";
 
 export function limitForExtension(extension: string): number {
   return VIDEO_EXTENSIONS.has(extension) ? VIDEO_MAX_BYTES : DOCUMENT_MAX_BYTES;

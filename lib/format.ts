@@ -5,6 +5,14 @@ export function formatSize(bytes: number): string {
     const value = bytes / 1024;
     return `${value >= 10 ? value.toFixed(0) : value.toFixed(1)} KB`;
   }
+  const gigabyte = 1024 * 1024 * 1024;
+  if (bytes >= gigabyte * 0.995) {
+    const gigabytes = bytes / gigabyte;
+    if (gigabytes >= 10 || Math.abs(gigabytes - Math.round(gigabytes)) < 0.05) {
+      return `${Math.round(gigabytes)} GB`;
+    }
+    return `${gigabytes.toFixed(1)} GB`;
+  }
   const value = bytes / (1024 * 1024);
   return `${value >= 10 ? value.toFixed(0) : value.toFixed(1)} MB`;
 }

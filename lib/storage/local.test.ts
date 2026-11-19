@@ -10,7 +10,7 @@ test("local storage uploads, renames, ranges, and deletes", async () => {
   process.env.DATA_DIR = directory;
   try {
     const empty = await driver.list();
-    assert.deepEqual(empty.folders.slice(0, 4), ["商品DM", "教育訓練", "表單文件", "行銷素材"]);
+    assert.deepEqual(empty.folders.slice(0, 3), ["客戶檔案", "講師分類", "月會檔案"]);
     assert.equal(empty.files.length, 0);
 
     const created = await driver.createFolder("競賽辦法");
@@ -18,17 +18,17 @@ test("local storage uploads, renames, ranges, and deletes", async () => {
 
     const bytes = new TextEncoder().encode("%PDF-1.1\nteam\n%%EOF\n");
     const file = await driver.addBytes({
-      name: "醫療險商品DM.pdf",
-      folder: "商品DM",
+      name: "客戶筆記.pdf",
+      folder: "客戶檔案",
       uploader: "梁仕翰",
       bytes,
     });
     assert.equal(file.uploader, "梁仕翰");
     assert.equal(file.size, bytes.byteLength);
 
-    const renamed = await driver.updateFile(file.id, { name: "新版醫療險.pdf", folder: "教育訓練" });
-    assert.equal(renamed.name, "新版醫療險.pdf");
-    assert.equal(renamed.folder, "教育訓練");
+    const renamed = await driver.updateFile(file.id, { name: "新版筆記.pdf", folder: "月會檔案" });
+    assert.equal(renamed.name, "新版筆記.pdf");
+    assert.equal(renamed.folder, "月會檔案");
 
     const full = await driver.openFile(file.id, null);
     assert.ok(full);
@@ -47,9 +47,9 @@ test("local storage uploads, renames, ranges, and deletes", async () => {
     assert.equal((await driver.list()).files.length, 0);
     await driver.deleteFolder("競賽辦法");
     assert.equal((await driver.list()).folders.includes("競賽辦法"), false);
-    await assert.rejects(() => driver.deleteFolder("商品DM"), /預設資料夾不能刪除/);
+    await assert.rejects(() => driver.deleteFolder("客戶檔案"), /預設資料夾不能刪除/);
     await assert.rejects(
-      () => driver.addBytes({ name: "virus.exe", folder: "商品DM", uploader: "梁仕翰", bytes }),
+      () => driver.addBytes({ name: "virus.exe", folder: "客戶檔案", uploader: "梁仕翰", bytes }),
       /不支援/,
     );
   } finally {

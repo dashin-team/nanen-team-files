@@ -2,12 +2,6 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
-@font-face {
-  font-family: "Nan En Kai";
-  src: url("/brand/nanen-kai.woff2") format("woff2");
-  font-display: swap;
-}
-
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
@@ -16,7 +10,7 @@
   --font-sans: var(--app-sans);
   --font-mono: ui-monospace, monospace;
   --font-heading: var(--app-serif);
-  --font-brand: "Nan En Kai", "Songti TC", "PMingLiU", "WenQuanYi Micro Hei", serif;
+  --font-brand: var(--app-serif);
   --color-gold: oklch(0.78 0.12 88);
   --color-gold-soft: oklch(0.95 0.04 92);
   --color-leaf: oklch(0.55 0.12 158);

@@ -1,6 +1,6 @@
 import { del, get, head, put, BlobNotFoundError, BlobPreconditionFailedError } from "@vercel/blob";
 import { randomUUID } from "node:crypto";
-import { DEFAULT_FOLDERS, MAX_CUSTOM_FOLDERS } from "@/lib/constants";
+import { DEFAULT_FOLDERS, MAX_CUSTOM_FOLDERS, blobCatalogPath, blobObjectPath } from "@/lib/constants";
 import { HttpError } from "@/lib/errors";
 import {
   assertFileAllowed,
@@ -11,6 +11,7 @@ import {
   sanitizeFolderName,
   sanitizePersonName,
 } from "@/lib/validate";
+import { assertFitsQuota } from "@/lib/usage";
 import {
   type Catalog,
   type FileBody,
@@ -19,7 +20,7 @@ import {
   normalizeCatalog,
 } from "@/lib/storage/types";
 
-const CATALOG_PATH = "catalog/index.json";
+const CATALOG_PATH = blobCatalogPath();
 
 function requireFolder(catalog: Catalog, folder: string): string {
   const name = sanitizeFolderName(folder);
@@ -94,6 +95,7 @@ async function assertPrivateObject(pathname: string): Promise<{ pathname: string
 
 async function insertFile(file: StoredFile): Promise<StoredFile> {
   await updateCatalog((catalog) => {
+    assertFitsQuota(catalog.files, file.size);
     if (!catalog.folders.includes(file.folder)) throw new HttpError(400, "請先選擇資料夾。");
     if (catalog.files.some((item) => item.id === file.id)) {
       throw new HttpError(409, "這份檔案已經在清單裡。");
@@ -107,7 +109,11 @@ export const blobStorage = {
   mode: "blob" as const,
 
   async list(): Promise<Catalog> {
-    return (await readCatalog()).catalog;
+    const catalog = (await readCatalog()).catalog;
+    return {
+      ...catalog,
+      files: catalog.files.filter((file) => isSafeBlobPath(file.pathname, file.id)),
+    };
   },
 
   async createFolder(folderName: string): Promise<Catalog> {
@@ -142,7 +148,7 @@ export const blobStorage = {
     const checked = assertFileAllowed(input.name, input.bytes.byteLength);
     const uploader = sanitizePersonName(input.uploader);
     const id = randomUUID();
-    const pathname = `files/${id}`;
+    const pathname = blobObjectPath(id);
     const uploaded = await put(pathname, Buffer.from(input.bytes), {
       access: "private",
       contentType: checked.contentType,
@@ -173,7 +179,7 @@ export const blobStorage = {
 
   async registerUploaded(input: { id: string; name: string; folder: string; uploader: string }): Promise<StoredFile> {
     if (!isUuid(input.id)) throw new HttpError(400, "檔案編號不正確。");
-    const stored = await assertPrivateObject(`files/${input.id}`);
+    const stored = await assertPrivateObject(blobObjectPath(input.id));
     try {
       if (!isSafeBlobPath(stored.pathname, input.id)) {
         throw new HttpError(400, "檔案位置不正確。");

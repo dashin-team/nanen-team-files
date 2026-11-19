@@ -1,4 +1,5 @@
 import {
+  BLOB_NAMESPACE,
   DEFAULT_FOLDERS,
   EXT_TO_MIME,
   MAX_FILENAME_LENGTH,
@@ -130,8 +131,8 @@ export function isSafeBlobPath(pathname: string, id: string): boolean {
     return false;
   }
   const parts = pathname.split("/");
-  if (parts.length !== 2 || parts[0] !== "files") return false;
-  const leaf = parts[1] ?? "";
+  if (parts.length !== 3 || parts[0] !== BLOB_NAMESPACE || parts[1] !== "files") return false;
+  const leaf = parts[2] ?? "";
   return leaf === id || leaf.startsWith(`${id}-`) || leaf.startsWith(`${id}.`);
 }
 

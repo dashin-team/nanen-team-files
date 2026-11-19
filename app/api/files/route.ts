@@ -1,15 +1,25 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { DEFAULT_FOLDERS } from "@/lib/constants";
 import { jsonError, requireSession } from "@/lib/http";
-import { getStorage } from "@/lib/storage";
+import { getStorage, storageMode } from "@/lib/storage";
 import { toPublicFile } from "@/lib/storage/types";
+import { summarizeUsage } from "@/lib/usage";
 
 export async function GET(request: NextRequest) {
   try {
     await requireSession(request);
+    if (storageMode() === "unconfigured") {
+      return NextResponse.json({
+        folders: [...DEFAULT_FOLDERS],
+        files: [],
+        usage: summarizeUsage([]),
+      });
+    }
     const catalog = await getStorage().list();
     return NextResponse.json({
       folders: catalog.folders,
       files: catalog.files.map(toPublicFile),
+      usage: summarizeUsage(catalog.files),
     });
   } catch (error) {
     return jsonError(error);

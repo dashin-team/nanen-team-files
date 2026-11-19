@@ -46,10 +46,12 @@ test("private blob urls and paths stay inside the files folder", () => {
   );
   assert.equal(isPrivateBlobUrl("http://abc.private.blob.vercel-storage.com/files/id"), false);
   const id = "11111111-1111-4111-8111-111111111111";
-  assert.equal(isSafeBlobPath(`files/${id}`, id), true);
-  assert.equal(isSafeBlobPath(`files/${id}-suffix`, id), true);
-  assert.equal(isSafeBlobPath(`files/../${id}`, id), false);
+  assert.equal(isSafeBlobPath(`shihan/files/${id}`, id), true);
+  assert.equal(isSafeBlobPath(`shihan/files/${id}-suffix`, id), true);
+  assert.equal(isSafeBlobPath(`files/${id}`, id), false);
+  assert.equal(isSafeBlobPath(`shihan/files/../${id}`, id), false);
   assert.equal(isSafeBlobPath(`other/${id}`, id), false);
+  assert.equal(isSafeBlobPath(`shihan/${id}`, id), false);
 });
 
 test("download header keeps the Chinese filename", () => {

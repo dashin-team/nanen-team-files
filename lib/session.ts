@@ -2,13 +2,19 @@ import { createHash, timingSafeEqual } from "node:crypto";
 
 export const COOKIE_NAME = "team_session";
 export const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 30;
+export const DEFAULT_GATE_PASSWORD = "仕翰";
 
 type SessionPayload = { exp: number; v: 1 };
 
-export function getTeamPassword(): string | null {
+/** NFC plus trim. Keeps Han characters; only drops wrapping whitespace and invisible marks phones sometimes insert. */
+export function normalizePassword(input: string): string {
+  return input.normalize("NFC").replace(/[\u200B-\u200D\uFEFF]/g, "").trim();
+}
+
+export function getTeamPassword(): string {
   const value = process.env.TEAM_PASSWORD;
-  if (!value || !value.trim()) return null;
-  return value;
+  if (typeof value !== "string") return DEFAULT_GATE_PASSWORD;
+  return normalizePassword(value) || DEFAULT_GATE_PASSWORD;
 }
 
 export function getSessionSecret(): string {
@@ -19,14 +25,12 @@ export function getSessionSecret(): string {
     }
     return dedicated;
   }
-  const password = getTeamPassword();
-  if (!password) throw new Error("TEAM_PASSWORD 尚未設定。");
-  return `team-session-v1:${password}`;
+  return `team-session-v1:${getTeamPassword()}`;
 }
 
 export function passwordsMatch(input: string, expected: string): boolean {
-  const left = createHash("sha256").update(input, "utf8").digest();
-  const right = createHash("sha256").update(expected, "utf8").digest();
+  const left = createHash("sha256").update(normalizePassword(input), "utf8").digest();
+  const right = createHash("sha256").update(normalizePassword(expected), "utf8").digest();
   return timingSafeEqual(left, right);
 }
 

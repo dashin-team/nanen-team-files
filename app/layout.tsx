@@ -22,8 +22,8 @@ const serif = Noto_Serif_TC({
 });
 
 export const metadata: Metadata = {
-  title: "南恩通訊處 團隊檔案庫",
-  description: "富邦人壽南恩通訊處的內部檔案共用。",
+  title: "仕翰的哩哩摳摳",
+  description: "仕翰的私人檔案庫。登入後可以整理、預覽和下載。",
   robots: { index: false, follow: false },
   icons: {
     icon: [

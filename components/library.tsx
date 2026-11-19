@@ -26,9 +26,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { DEFAULT_FOLDERS, NAME_STORAGE_KEY, canPreview, typeLabel } from "@/lib/constants";
+import { DEFAULT_FOLDERS, DEFAULT_UPLOADER_NAME, DOCUMENT_MAX_BYTES, NAME_STORAGE_KEY, VIDEO_MAX_BYTES, canPreview, typeLabel } from "@/lib/constants";
 import { formatSize, formatWhen } from "@/lib/format";
 import type { PublicFile } from "@/lib/storage/types";
+import type { LibraryUsage } from "@/lib/usage";
 import { readJson, uploadBlob, uploadLocal } from "@/lib/transfer";
 import { sanitizePersonName } from "@/lib/validate";
 
@@ -50,14 +51,17 @@ async function loadLibrary() {
     limits: { document: number; video: number };
     accept: string;
   }>(sessionResponse);
-  const library = await readJson<{ folders: string[]; files: PublicFile[] }>(filesResponse);
+  const library = await readJson<{ folders: string[]; files: PublicFile[]; usage: LibraryUsage }>(filesResponse);
   return { session, library };
 }
+
+const UPLOAD_LIMITS = `文件與圖片 ${formatSize(DOCUMENT_MAX_BYTES)} 以內，影片 ${formatSize(VIDEO_MAX_BYTES)} 以內。`;
 
 export function Library() {
   const router = useRouter();
   const fileInput = useRef<HTMLInputElement>(null);
-  const [uploader, setUploader] = useState("");
+  const [uploader, setUploader] = useState(DEFAULT_UPLOADER_NAME);
+  const [usage, setUsage] = useState<LibraryUsage | null>(null);
   const [folders, setFolders] = useState<string[]>([...DEFAULT_FOLDERS]);
   const [files, setFiles] = useState<PublicFile[]>([]);
   const [storage, setStorage] = useState<StorageMode>("local");
@@ -87,6 +91,7 @@ export function Library() {
     setAccept(result.session.accept);
     setFolders(result.library.folders);
     setFiles(result.library.files);
+    setUsage(result.library.usage);
     return result;
   }
 
@@ -105,7 +110,8 @@ export function Library() {
         setAccept(result.session.accept);
         setFolders(result.library.folders);
         setFiles(result.library.files);
-        if (saved) setUploader(saved);
+        setUsage(result.library.usage);
+        setUploader(saved || DEFAULT_UPLOADER_NAME);
       } catch (error) {
         if (!cancelled) {
           setLoadError(error instanceof Error ? error.message : "讀取檔案清單失敗。");
@@ -155,9 +161,13 @@ export function Library() {
     if (!pendingFile || storage === "unconfigured") return;
     let name = "";
     try {
-      name = sanitizePersonName(uploader);
+      name = sanitizePersonName(uploader.trim() || DEFAULT_UPLOADER_NAME);
+      if (usage && pendingFile.size > usage.remainingBytes) {
+        toast.error(`空間不夠。還可以放 ${formatSize(usage.remainingBytes) || "0 B"}。`);
+        return;
+      }
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "請先填上您的名字。");
+      toast.error(error instanceof Error ? error.message : "請填一個名字。");
       return;
     }
     setBusy(true);
@@ -278,7 +288,7 @@ export function Library() {
         <div className="sticky top-0 z-30 border-b border-border bg-card/95 backdrop-blur">
           <div className="mx-auto flex w-full max-w-6xl items-center gap-3 px-4 py-2 pt-[max(0.5rem,env(safe-area-inset-top))]">
             <BrandLogo className="size-10" />
-            <h1 className="min-w-0 flex-1 font-brand text-lg leading-tight text-primary">團隊檔案庫</h1>
+            <h1 className="min-w-0 flex-1 truncate font-brand text-base leading-tight text-primary sm:text-lg">仕翰的哩哩摳摳</h1>
             <Button type="button" variant="outline" className="h-11 px-3 text-base" onClick={logout}>
               <LogOut className="size-4" />
               登出
@@ -287,36 +297,36 @@ export function Library() {
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-6xl px-4 pb-28 pt-5 md:pb-16">
+      <main className="mx-auto w-full max-w-6xl px-4 pb-36 pt-5 md:pb-16">
         <label className="block">
-          <span className="text-sm font-medium">您的名字</span>
+          <span className="text-sm font-medium">檔案上的名字</span>
           <Input
             value={uploader}
             onChange={(event) => rememberName(event.target.value)}
             maxLength={20}
-            placeholder="例如：林夥伴"
+            placeholder="仕翰"
             autoComplete="name"
             className="mt-2 h-12 bg-card px-3 text-base"
           />
-          <span className="mt-1 block text-xs text-muted-foreground">會顯示在檔案上，也會記在這支手機裡。</span>
+          <span className="mt-1 block text-xs text-muted-foreground">會寫在檔案旁邊，方便以後辨認。</span>
         </label>
 
         {storage === "local" ? (
           <p className="mt-4 rounded-2xl bg-gold-soft px-4 py-3 text-sm leading-6 text-foreground">
-            現在是本機練習模式，檔案存在這台電腦的 .data 資料夾。上線前要接上 Vercel Blob，檔案才會一直留著。
+            這是本機練習：檔案只存在這台電腦的 .data，不會進雲端，重新部署也會消失。部署到 Vercel 並接上 Private Blob 之後，才會改存私人雲端。
           </p>
         ) : null}
         {storage === "unconfigured" ? (
           <p className="mt-4 rounded-2xl bg-destructive/10 px-4 py-3 text-sm leading-6 text-destructive">
-            雲端儲存還沒接上，暫時不能上傳。請管理員在 Vercel 建立 Private Blob，並設定 BLOB_READ_WRITE_TOKEN。
+            私人雲端還沒接上，現在不能上傳。請在 Vercel 建立 Private Blob，並設定 BLOB_READ_WRITE_TOKEN。
           </p>
         ) : null}
         {storage === "blob" ? (
-          <p className="mt-4 text-sm text-muted-foreground">檔案放在私人雲端，只有知道密碼的夥伴能打開。</p>
+          <p className="mt-4 text-sm text-muted-foreground">檔案存在私人雲端。只有登入後才能打開或下載。</p>
         ) : null}
 
         <div className="mt-6 md:grid md:grid-cols-[15rem_minmax(0,1fr)] md:gap-8">
-          <aside>
+          <aside className="md:sticky md:top-24 md:self-start">
             <div className="flex items-center justify-between md:mb-3">
               <h2 className="text-sm font-medium">資料夾</h2>
               <Button type="button" variant="ghost" className="h-10 px-2" onClick={() => setFolderOpen(true)}>
@@ -328,6 +338,7 @@ export function Library() {
               <FolderChip
                 label={ALL}
                 count={files.length}
+                bytes={usage?.usedBytes ?? 0}
                 active={folder === ALL}
                 onClick={() => setFolder(ALL)}
               />
@@ -336,11 +347,13 @@ export function Library() {
                   key={name}
                   label={name}
                   count={counts.get(name) ?? 0}
+                  bytes={usage?.folderBytes[name] ?? 0}
                   active={folder === name}
                   onClick={() => setFolder(name)}
                 />
               ))}
             </div>
+            {usage ? <StorageMeter usage={usage} /> : null}
             {customEmpty ? (
               <Button
                 type="button"
@@ -417,9 +430,7 @@ export function Library() {
                     {query.trim() ? `找不到「${query.trim()}」` : "這個資料夾還沒有檔案"}
                   </p>
                   <p className="mx-auto mt-2 max-w-xs text-sm leading-6 text-muted-foreground">
-                    {query.trim()
-                      ? "換個關鍵字，或清掉搜尋看看其他檔案。"
-                      : "商品 DM、教育講義、表單或行銷圖，都可以從下方上傳。"}
+                    {query.trim() ? "換個關鍵字，或清掉搜尋看看其他檔案。" : "按下方的上傳，把檔案放進這個資料夾。"}
                   </p>
                 </div>
               ) : null}
@@ -486,6 +497,7 @@ export function Library() {
 
       <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background/95 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur md:hidden">
         <div className="mx-auto w-full max-w-6xl">
+          <p className="mb-2 text-center text-xs leading-5 text-muted-foreground">{UPLOAD_LIMITS}</p>
           <Button
             type="button"
             className="h-12 w-full text-base"
@@ -508,7 +520,7 @@ export function Library() {
           上傳檔案
         </Button>
         <p className="mt-3 max-w-xl text-xs leading-5 text-muted-foreground">
-          文件與圖片上限 40 MB，影片上限 100 MB。支援 PDF、JPG、PNG、HEIC、Word、Excel、PowerPoint、MP4。
+          {UPLOAD_LIMITS}支援 PDF、JPG、PNG、HEIC、Word、Excel、PowerPoint、MP4。
         </p>
       </div>
 
@@ -553,7 +565,8 @@ export function Library() {
               ))}
             </select>
             <p className="text-xs leading-5 text-muted-foreground">
-              {pendingFile ? formatSize(pendingFile.size) : ""} · 上傳者 {uploader.trim() || "（請先填名字）"}
+              {pendingFile ? formatSize(pendingFile.size) : ""} · {UPLOAD_LIMITS}
+              名字 {uploader.trim() || DEFAULT_UPLOADER_NAME}
             </p>
             {progress !== null ? (
               <div className="h-2 overflow-hidden rounded-full bg-secondary" aria-valuenow={progress} aria-valuemin={0} aria-valuemax={100} role="progressbar">
@@ -620,7 +633,7 @@ export function Library() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>新增資料夾</DialogTitle>
-            <DialogDescription>例如：競賽辦法、客戶感謝信。16 個字以內。</DialogDescription>
+            <DialogDescription>16 個字以內。例如：合約、筆記。</DialogDescription>
           </DialogHeader>
           <form onSubmit={submitFolder} className="grid gap-3">
             <Input
@@ -650,7 +663,7 @@ export function Library() {
           <AlertDialogHeader>
             <AlertDialogTitle>刪除這個檔案？</AlertDialogTitle>
             <AlertDialogDescription className="break-all">
-              「{deleteTarget?.name}」刪除後無法復原，團隊裡的人都會看不到。
+              「{deleteTarget?.name}」刪除後無法復原。
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -689,11 +702,13 @@ export function Library() {
 function FolderChip({
   label,
   count,
+  bytes,
   active,
   onClick,
 }: {
   label: string;
   count: number;
+  bytes: number;
   active: boolean;
   onClick: () => void;
 }) {
@@ -706,8 +721,36 @@ function FolderChip({
         active ? "bg-primary text-primary-foreground" : "bg-card text-foreground ring-1 ring-border"
       }`}
     >
-      <span>{label}</span>
-      <span className={active ? "text-primary-foreground/80" : "text-muted-foreground"}>{count}</span>
+      <span className="truncate">{label}</span>
+      <span className={`shrink-0 text-xs ${active ? "text-primary-foreground/80" : "text-muted-foreground"}`}>
+        {formatSize(bytes)} · {count}
+      </span>
     </button>
+  );
+}
+
+function StorageMeter({ usage }: { usage: LibraryUsage }) {
+  const ratio = usage.quotaBytes > 0 ? usage.usedBytes / usage.quotaBytes : 1;
+  const percent = Math.max(0, Math.min(100, ratio * 100));
+  const tone = ratio >= 0.95 ? "full" : ratio >= 0.8 ? "warn" : "ok";
+  const bar = tone === "full" ? "bg-destructive" : tone === "warn" ? "bg-gold" : "bg-primary";
+  const text = tone === "full" ? "text-destructive" : tone === "warn" ? "text-foreground" : "text-muted-foreground";
+  return (
+    <div className="mt-4 border-t border-border px-1 pt-4 md:mt-6">
+      <div
+        className="h-1 overflow-hidden rounded-full bg-secondary"
+        role="meter"
+        aria-valuemin={0}
+        aria-valuemax={usage.quotaBytes}
+        aria-valuenow={Math.min(usage.usedBytes, usage.quotaBytes)}
+        aria-label="儲存空間"
+      >
+        <div className={`h-full rounded-full ${bar}`} style={{ width: `${percent}%` }} />
+      </div>
+      <p className={`mt-2 text-xs leading-5 ${text}`}>
+        已使用 {formatSize(usage.usedBytes)}，共 {formatSize(usage.quotaBytes)}
+      </p>
+      <p className="text-xs leading-5 text-muted-foreground">還可以放 {formatSize(usage.remainingBytes) || "0 B"}</p>
+    </div>
   );
 }

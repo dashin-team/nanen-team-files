@@ -1,4 +1,4 @@
-import { EXT_TO_MIME } from "@/lib/constants";
+import { EXT_TO_MIME, blobObjectPath } from "@/lib/constants";
 import { extensionOf, fileRejection } from "@/lib/validate";
 import type { PublicFile } from "@/lib/storage/types";
 
@@ -63,7 +63,7 @@ export async function uploadBlob(
   if (rejection) throw new Error(rejection);
   const { upload } = await import("@vercel/blob/client");
   const id = crypto.randomUUID();
-  await upload(`files/${id}`, file, {
+  await upload(blobObjectPath(id), file, {
     access: "private",
     handleUploadUrl: "/api/blob",
     contentType: contentTypeFor(file.name),

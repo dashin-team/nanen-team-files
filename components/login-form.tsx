@@ -40,20 +40,25 @@ export function LoginForm() {
       className="rounded-[1.6rem] bg-card p-6 ring-1 ring-border"
     >
       <label htmlFor="password" className="text-sm font-medium">
-        團隊密碼
+        密碼
       </label>
       <div className="mt-2 flex gap-2">
         <Input
           id="password"
           name="password"
           type={visible ? "text" : "password"}
+          lang="zh-Hant"
           autoComplete="current-password"
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
+          enterKeyHint="go"
           autoFocus
           required
           value={password}
           onChange={(event) => setPassword(event.target.value)}
           className="h-12 px-3 text-base"
-          placeholder="輸入團隊共用密碼"
+          placeholder="輸入密碼"
         />
         <Button
           type="button"
@@ -73,7 +78,7 @@ export function LoginForm() {
         {pending ? "正在進入…" : "進入文件庫"}
       </Button>
       <p className="mt-4 text-xs leading-5 text-muted-foreground">
-        密碼是團隊共用的。請用電話或當面告訴夥伴，不要貼在 LINE 群組，也不要轉給保戶。
+        這是你的私人密碼，請自己保管。若手機打不出中文，先按「顯示」再輸入。
       </p>
     </form>
   );

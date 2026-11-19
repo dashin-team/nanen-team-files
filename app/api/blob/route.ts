@@ -1,6 +1,6 @@
 import { handleUpload, type HandleUploadBody } from "@vercel/blob/client";
 import { NextResponse, type NextRequest } from "next/server";
-import { ALLOWED_CONTENT_TYPES, VIDEO_MAX_BYTES } from "@/lib/constants";
+import { ALLOWED_CONTENT_TYPES, VIDEO_MAX_BYTES, blobObjectPath } from "@/lib/constants";
 import { jsonError, requireSession } from "@/lib/http";
 import { isUuid } from "@/lib/validate";
 
@@ -12,8 +12,9 @@ export async function POST(request: NextRequest) {
       request,
       body,
       onBeforeGenerateToken: async (pathname) => {
-        const id = pathname.startsWith("files/") ? pathname.slice("files/".length) : "";
-        if (!isUuid(id) || pathname !== `files/${id}`) {
+        const marker = "shihan/files/";
+        const id = pathname.startsWith(marker) ? pathname.slice(marker.length) : "";
+        if (!isUuid(id) || pathname !== blobObjectPath(id)) {
           throw new Error("檔案位置不正確。");
         }
         return {

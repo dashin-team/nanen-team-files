@@ -1,6 +1,8 @@
-# 南恩通訊處 團隊檔案庫
+# 仕翰的哩哩摳摳
 
-富邦人壽南恩通訊處共用的內部檔案網站。手機從 LINE 點開就能用：輸入同一組團隊密碼、上傳檔案、預覽、下載。沒有個人帳號。
+仕翰的私人檔案庫。手機打開、輸入密碼，就能上傳、預覽、下載。沒有另外的帳號。
+
+預設資料夾：客戶檔案、講師分類、月會檔案。也可以自己新增資料夾。
 
 可以放的格式：PDF、JPG、PNG、GIF、WEBP、HEIC、Word、Excel、CSV、PowerPoint、MP4、MOV、WEBM。
 
@@ -9,18 +11,18 @@
 - 文件、圖片、表格、簡報：40 MB
 - 影片：100 MB
 
-預設資料夾：商品DM、教育訓練、表單文件、行銷素材。夥伴也可以自己新增資料夾。
+畫面下方的上傳按鈕旁會再寫一次。側欄底部有一條用量條，格式像「已使用 120 MB，共 1 GB」，快滿的時候會變色。每個資料夾也會顯示自己的大小。
 
-## 夥伴怎麼用
+## 怎麼用
 
-1. 打開網址，輸入團隊密碼。登入會記住 30 天，同一支手機不用天天重打。
-2. 上方填自己的名字。名字會記在這支手機，也會出現在檔案上。
-3. 選資料夾，按「上傳檔案」。
+1. 打開網址，輸入密碼。登入會記住 30 天。
+2. 「檔案上的名字」會寫在檔案旁邊，預設是仕翰，也會記在這支手機。
+3. 選資料夾，按「上傳檔案」。每一份檔案都可以按「下載」。
 4. 圖片、PDF、影片可以預覽。Word、Excel、簡報請下載後開啟。
 5. 重新命名和刪除都會再問一次。
 6. 用完可以按「登出」。
 
-密碼請用電話或當面告知，不要貼在 LINE 群組，也不要轉給保戶。
+客戶檔案只在登入後才打得開。雲端檔案放在私有 Blob，網址本身打不開，也不能被列舉。
 
 ## 本機先試
 
@@ -28,84 +30,57 @@
 
 ```bash
 cp .env.example .env.local
-```
-
-用記事本打開 `.env.local`，把 `TEAM_PASSWORD=` 後面改成你們要試的密碼，存檔。然後：
-
-```bash
 npm install
 npm run dev
 ```
 
-瀏覽器打開 [http://127.0.0.1:3847](http://127.0.0.1:3847)。
+瀏覽器打開 [http://127.0.0.1:3847](http://127.0.0.1:3847)。沒填 `TEAM_PASSWORD` 時，密碼是「仕翰」。
 
-沒有設定 `BLOB_READ_WRITE_TOKEN` 時，檔案存在專案裡的 `.data/` 資料夾。這個資料夾不會進 Git，只適合在自己的電腦練習。畫面上方會提示「本機練習模式」。
+沒有 `BLOB_READ_WRITE_TOKEN` 時，檔案存在專案裡的 `.data/`。這個資料夾不會進 Git，只存在這台電腦。畫面會寫明這是本機練習，不會說檔案已經在雲端。
 
 ## 環境變數
 
-| 名稱 | 必填 | 說明 |
+| 名稱 | 新的 Vercel 專案 | 說明 |
 | --- | --- | --- |
-| `TEAM_PASSWORD` | 是 | 團隊共用密碼。不要寫進程式碼，也不要提交到 Git。 |
-| `BLOB_READ_WRITE_TOKEN` | 上線要 | Vercel Blob 的讀寫權杖。本機留空即可。 |
-| `SESSION_SECRET` | 否 | 一般不用設。沒設的時候，登入狀態用團隊密碼簽署；改密碼後大家會被登出。如果另外設了它，改密碼時也要一起改，否則舊登入還在。至少 16 個字。 |
+| `BLOB_READ_WRITE_TOKEN` | 必填 | Private Blob 的讀寫權杖。沒有它，網站在 Vercel 上會拒絕上傳，避免檔案寫進暫時硬碟後消失。 |
+| `TEAM_PASSWORD` | 不必填 | 密碼。留空時是「仕翰」。要比對的是原文，中文不會被濾掉；前後空白和手機偶爾多出來的看不見字元會先清掉。 |
+| `SESSION_SECRET` | 不必填 | 至少 16 個字。留空時用密碼簽署登入；改密碼後大家要重新登入。若另外設了它，改密碼時也要一起改。 |
+| `BLOB_QUOTA_BYTES` | 不必填 | 用量條的上限，單位是位元組。留空時是 `1073741824`（1 GB），對應 [Vercel Blob Hobby 內含的 1 GB/月](https://vercel.com/docs/vercel-blob/usage-and-pricing)。 |
 
-## 放到網路上
+用量只加總這個網站存在 `shihan/` 底下的檔案。別的網站放在同一個 Blob 儲存庫裡的檔案不會算進來，也不會出現在清單裡。
 
-檔案要一直留著，請用 Vercel，並接一個 **Private（私有）** Blob 儲存庫。不要用公開儲存庫。Vercel 的硬碟是暫時的，沒接 Blob 時網站會拒絕上傳，避免檔案悄悄消失。
+## 放到 Vercel
 
-請準備：一個 GitHub 帳號、一個 Vercel 帳號（用 GitHub 登入最簡單）。
+這個分支要當成另一個 Vercel 專案，Production Branch 設成 `shihan-files`。不要把它合併進 main。
 
-1. 把這個專案放到 GitHub。若畫面上方有建立存放處的按鈕，先建立；否則請會用 Git 的人幫忙推上去。
-2. 打開 [vercel.com/new](https://vercel.com/new)，Import 這個 GitHub 專案。
-3. Framework 維持 Next.js，其他不用改。先不要按 Deploy。
-4. 在 Environment Variables 新增一筆：
-   - Name：`TEAM_PASSWORD`
-   - Value：你們的團隊密碼（建議至少 12 個字，不要用生日或分機）
-   - 勾選 Production
-5. 按 Deploy，等它完成。
-6. 進入這個專案的 Storage：
-   - Create → Blob
-   - Access 一定選 **Private**
-   - 勾選 **Add a read-write token env var**（這會寫入 `BLOB_READ_WRITE_TOKEN`，手機直接上傳需要它）
-   - 連到這個專案的 Production
-7. 回到 Deployments，對剛剛那次部署按 Redeploy，讓新的儲存設定生效。
-8. 打開網站，用團隊密碼登入，上傳一份 PDF，確認可以預覽和下載。再換一支沒登入的手機，確認打不開檔案網址。
-9. 把網站網址貼到 LINE。密碼另外用電話或當面說。
+1. 在 Vercel 用這個 GitHub 專案新建一個 Project。
+2. Settings → Git → Production Branch 改成 `shihan-files`。
+3. Storage → Create → Blob。Access 選 **Private**。勾選加入 read-write token（會寫入 `BLOB_READ_WRITE_TOKEN`），連到這個新專案的 Production。
+4. 最好用這個專案自己的 Blob 儲存庫。Hobby 的 1 GB 是整個儲存庫共用的；若和別的網站共用同一個庫，Vercel 的實際上限仍是整庫加總，畫面上的用量條只計算 `shihan/`。
+5. 若要改掉預設密碼，再加 `TEAM_PASSWORD`。不要加的話，密碼就是「仕翰」。
+6. Deployments 對最新一次正式環境按 Redeploy，讓儲存設定生效。
+7. 用密碼登入，上傳一份 PDF，確認可以預覽和下載。換一個沒登入的瀏覽器，確認直接打開檔案網址會被擋下。
 
-如果第 6 步沒看到那個勾選：打開 Blob store → Projects → Connect to Project（或 Update Project Connection），勾選加入 read-write token，環境選 Production，存檔後再 Redeploy。
+檔案實際路徑是 `shihan/catalog/index.json` 和 `shihan/files/<編號>`。下載一律先檢查登入，再由網站從私有 Blob 讀出來。
 
 ## 以後要改密碼
 
-1. 打開 Vercel 專案 → Settings → Environment Variables。
-2. 編輯 `TEAM_PASSWORD`，存檔。
-3. 如果有設定 `SESSION_SECRET`，也改掉或刪掉它。沒設定就不用動。
-4. 到 Deployments，對最新的正式環境按 Redeploy。環境變數改完要重新部署才會生效。
-5. 用電話或當面把新密碼告訴還在團隊裡的人。舊的登入會失效，大家要重新輸入。
+1. Vercel → Settings → Environment Variables，編輯 `TEAM_PASSWORD`。
+2. 如果有設 `SESSION_SECRET`，也一起改或刪掉。
+3. Redeploy。舊的登入會失效。
 
-有人離開團隊時，請改密碼。這組密碼是共用的，改完之後對方就不能再進。
-
-本機改密碼：編輯 `.env.local` 的 `TEAM_PASSWORD`，停掉 `npm run dev` 再重開。
+本機改密碼：編輯 `.env.local` 的 `TEAM_PASSWORD`，停掉 `npm run dev` 再重開。留空則回到「仕翰」。
 
 ## 常見狀況
 
-- 密碼明明對卻進不去：Vercel 改完變數後還沒 Redeploy。
-- 畫面說雲端儲存還沒接上：沒有 `BLOB_READ_WRITE_TOKEN`，或接上之後沒有重新部署。
+- 密碼明明對卻進不去：改完環境變數後還沒 Redeploy。手機若多了一個空白，登入時會先清掉再比對。
+- 畫面說私人雲端還沒接上：沒有 `BLOB_READ_WRITE_TOKEN`，或接上之後沒有重新部署。這時候不能上傳。
+- 畫面說本機練習：現在是在自己的電腦跑，檔案在 `.data/`，不是雲端。
 - 上傳時說儲存庫必須是 Private：Blob 建成公開的了。請另建一個 Private 儲存庫再連一次。
-- 檔案太大：文件 40 MB、影片 100 MB，請先壓縮或分段。
-- Word / Excel / 簡報沒有預覽：這是正常的，請按下載，用手機或電腦打開。
+- 空間不夠：已用空間加上這份檔案會超過上限。
+- 檔案太大：文件 40 MB、影片 100 MB。
+- Word / Excel / 簡報沒有預覽：請按「下載」再開。
 
-## 安全提醒
+## 橫幅
 
-- 所有檔案網址都要先通過登入。沒有密碼不能看清單，也不能下載。
-- 雲端檔案放在私有 Blob，網址本身打不開，必須經過這個網站。
-- 請搜尋引擎不要索引這個網站。
-- 這是通訊處內部工具，不是富邦人壽的官方客戶網站。
-
-## 換成正式橫幅和標誌
-
-正式橫幅和圓形標誌已放在下面的路徑。若以後要換圖，蓋掉同名檔案再重新整理即可：
-
-- 橫幅（約 4:1）：`public/brand/banner.jpg`，用在登入頁上方和檔案頁頂端。
-- 圓形標誌：`public/brand/logo.png`，用在導覽列和瀏覽器圖示。
-
-標題字用的楷書小檔在 `public/brand/nanen-kai.woff2`，不用改。
+橫幅在 `public/brand/banner.png`，圓形標誌在 `public/brand/logo.png`。要換圖時蓋掉同名檔案再重新整理。

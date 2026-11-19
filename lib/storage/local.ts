@@ -13,6 +13,7 @@ import {
   sanitizeFolderName,
   sanitizePersonName,
 } from "@/lib/validate";
+import { assertFitsQuota } from "@/lib/usage";
 import { type Catalog, type FileBody, type StoredFile, emptyCatalog, normalizeCatalog } from "@/lib/storage/types";
 
 function dataDir(): string {
@@ -121,6 +122,7 @@ export const localStorage = {
     try {
       return await locked(async () => {
         const catalog = await readCatalog();
+        assertFitsQuota(catalog.files, input.bytes.byteLength);
         const folder = requireFolder(catalog, input.folder);
         const file: StoredFile = {
           id,

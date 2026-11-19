@@ -23,16 +23,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "嘗試太多次，請 15 分鐘後再試。" }, { status: 429 });
     }
     const expected = getTeamPassword();
-    if (!expected) {
-      return NextResponse.json(
-        { error: "系統還沒設定團隊密碼。請管理員設定 TEAM_PASSWORD。" },
-        { status: 503 },
-      );
-    }
     const body = (await request.json().catch(() => null)) as { password?: unknown } | null;
     const password = typeof body?.password === "string" ? body.password : "";
-    if (!password) {
-      return NextResponse.json({ error: "請輸入團隊密碼。" }, { status: 400 });
+    if (!password.trim()) {
+      return NextResponse.json({ error: "請輸入密碼。" }, { status: 400 });
     }
     if (!passwordsMatch(password, expected)) {
       recordLoginFailure(ip);

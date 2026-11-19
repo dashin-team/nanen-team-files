@@ -15,11 +15,7 @@ function passwordFromEnvFile() {
   return "";
 }
 
-const password = process.env.TEAM_PASSWORD || passwordFromEnvFile();
-if (!password) {
-  console.error("請先在 .env.local 設定 TEAM_PASSWORD");
-  process.exit(1);
-}
+const password = process.env.TEAM_PASSWORD || passwordFromEnvFile() || "仕翰";
 
 function assert(condition, message) {
   if (!condition) throw new Error(message);
@@ -83,19 +79,22 @@ async function main() {
     return body.file;
   }
 
-  const image = await upload("團隊合照.png", "image/png", png, "行銷素材", "梁仕翰");
-  const document = await upload("醫療險商品DM.pdf", "application/pdf", pdf, "商品DM", "王夥伴");
+  const image = await upload("月會照片.png", "image/png", png, "月會檔案", "仕翰");
+  const document = await upload("客戶筆記.pdf", "application/pdf", pdf, "客戶檔案", "仕翰");
 
   const listed = await fetch(`${base}/api/files`, { headers: auth });
   const library = await listed.json();
   assert(listed.status === 200, "清單讀取失敗");
-  assert(library.folders.includes("商品DM"), "缺少預設資料夾");
+  assert(library.folders.includes("客戶檔案"), "缺少預設資料夾");
+  assert(library.folders.includes("講師分類"), "缺少預設資料夾");
+  assert(library.folders.includes("月會檔案"), "缺少預設資料夾");
   assert(library.folders.includes("競賽辦法"), "缺少新資料夾");
+  assert(library.usage && library.usage.usedBytes > 0, "沒有回報用量");
   const names = library.files.map((file) => file.name);
-  assert(names.includes("團隊合照.png") && names.includes("醫療險商品DM.pdf"), `清單沒有檔案 ${names.join(",")}`);
+  assert(names.includes("月會照片.png") && names.includes("客戶筆記.pdf"), `清單沒有檔案 ${names.join(",")}`);
   const uploaded = library.files.find((file) => file.id === document.id);
-  assert(uploaded.uploader === "王夥伴", "上傳者名稱不對");
-  assert(uploaded.folder === "商品DM", "資料夾不對");
+  assert(uploaded.uploader === "仕翰", "上傳者名稱不對");
+  assert(uploaded.folder === "客戶檔案", "資料夾不對");
 
   const downloaded = await fetch(`${base}/api/files/${document.id}/content?download=1`, { headers: auth });
   assert(downloaded.status === 200, `下載失敗 ${downloaded.status}`);
@@ -120,14 +119,14 @@ async function main() {
   const renamed = await fetch(`${base}/api/files/${document.id}`, {
     method: "PATCH",
     headers: { "content-type": "application/json", ...auth },
-    body: JSON.stringify({ name: "新版醫療險DM.pdf", folder: "教育訓練" }),
+    body: JSON.stringify({ name: "新版筆記.pdf", folder: "講師分類" }),
   });
   const renamedBody = await renamed.json();
   assert(renamed.status === 200, `重新命名失敗 ${JSON.stringify(renamedBody)}`);
-  assert(renamedBody.file.name === "新版醫療險DM.pdf", "新檔名不對");
-  assert(renamedBody.file.folder === "教育訓練", "移動資料夾失敗");
+  assert(renamedBody.file.name === "新版筆記.pdf", "新檔名不對");
+  assert(renamedBody.file.folder === "講師分類", "移動資料夾失敗");
 
-  const rejected = await upload("setup.exe", "application/octet-stream", Buffer.from("MZ"), "表單文件", "梁仕翰").then(
+  const rejected = await upload("setup.exe", "application/octet-stream", Buffer.from("MZ"), "講師分類", "仕翰").then(
     () => false,
     () => true,
   );
@@ -150,8 +149,8 @@ async function main() {
   const tooBig = Buffer.alloc(40 * 1024 * 1024 + 1, 1);
   const bigForm = new FormData();
   bigForm.set("file", new Blob([tooBig], { type: "application/pdf" }), "太大.pdf");
-  bigForm.set("folder", "表單文件");
-  bigForm.set("uploader", "梁仕翰");
+  bigForm.set("folder", "講師分類");
+  bigForm.set("uploader", "仕翰");
   const big = await fetch(`${base}/api/files`, { method: "POST", headers: auth, body: bigForm });
   assert(big.status === 400, `超過 40MB 應被拒絕，得到 ${big.status}`);
 
