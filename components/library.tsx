@@ -273,20 +273,13 @@ export function Library() {
 
   return (
     <div className="min-h-dvh">
-      <header className="sticky top-0 z-30 bg-primary">
-        <div className="relative">
-          <BrandBanner className="h-28 sm:h-36" />
-          <div className="absolute inset-0 bg-gradient-to-r from-primary/55 via-primary/10 to-primary/25" />
-          <div className="absolute inset-0 mx-auto flex w-full max-w-6xl items-center gap-3 px-4 pt-[env(safe-area-inset-top)]">
-            <BrandLogo className="size-14 shadow-sm sm:size-16" />
-            <h1 className="min-w-0 flex-1 font-brand text-xl leading-tight text-white drop-shadow-[0_1px_2px_rgba(6,18,48,0.8)] sm:text-2xl">
-              團隊檔案庫
-            </h1>
-            <Button
-              type="button"
-              className="h-11 bg-white px-3 text-base text-primary hover:bg-white/90"
-              onClick={logout}
-            >
+      <header className="bg-primary">
+        <BrandBanner />
+        <div className="sticky top-0 z-30 border-b border-border bg-card/95 backdrop-blur">
+          <div className="mx-auto flex w-full max-w-6xl items-center gap-3 px-4 py-2 pt-[max(0.5rem,env(safe-area-inset-top))]">
+            <BrandLogo className="size-10" />
+            <h1 className="min-w-0 flex-1 font-brand text-lg leading-tight text-primary">團隊檔案庫</h1>
+            <Button type="button" variant="outline" className="h-11 px-3 text-base" onClick={logout}>
               <LogOut className="size-4" />
               登出
             </Button>
